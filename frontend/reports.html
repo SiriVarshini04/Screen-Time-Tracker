@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Screen Time</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav>
+        <h2><a href="dashboard.html" class="brand-logo">ScreenTime</a></h2>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="manage-websites.html">Websites</a>
+            <a href="limits.html">Limits</a>
+            <a href="reports.html" class="active">Reports</a>
+            <a href="rewards.html">Rewards</a>
+            <a href="#" onclick="logout()">Logout</a>
+            <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0; border:none; margin-top:0; font-size:1.2rem; cursor:pointer;" title="Toggle Light/Dark Mode">🌓</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Usage Reports</h1>
+
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+            <!-- Daily Chart -->
+            <div class="glass-card">
+                <h3>Today's Usage</h3>
+                <canvas id="dailyChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Weekly Chart -->
+            <div class="glass-card">
+                <h3>This Week's Usage</h3>
+                <canvas id="weeklyChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 2rem;">
+            <h3>Detailed Weekly Data</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Website Name</th>
+                        <th>URL</th>
+                        <th>Total Duration (mins)</th>
+                    </tr>
+                </thead>
+                <tbody id="report-table">
+                    <!-- Data populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        checkAuth();
+
+        async function loadReports() {
+            try {
+                const reports = await apiRequest('/get-reports');
+                
+                // Process Daily Data
+                const dailyLabels = reports.daily.map(d => d.name);
+                const dailyData = reports.daily.map(d => d.duration);
+
+                // Process Weekly Data
+                const weeklyLabels = reports.weekly.map(d => d.name);
+                const weeklyData = reports.weekly.map(d => d.total_duration);
+
+                // Daily Chart
+                new Chart(document.getElementById('dailyChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: dailyLabels,
+                        datasets: [{
+                            data: dailyData,
+                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { labels: { color: '#f8fafc' } } } }
+                });
+
+                // Weekly Chart
+                new Chart(document.getElementById('weeklyChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: weeklyLabels,
+                        datasets: [{
+                            label: 'Minutes Used',
+                            data: weeklyData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                        },
+                        plugins: { legend: { labels: { color: '#f8fafc' } } }
+                    }
+                });
+
+                // Table Data
+                const tbody = document.getElementById('report-table');
+                if (reports.weekly.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="text-muted" style="text-align:center;">No data found for this week</td></tr>';
+                } else {
+                    reports.weekly.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.name}</td>
+                            <td>${item.url}</td>
+                            <td style="color:var(--accent-green); font-weight:bold;">${item.total_duration}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        window.onload = loadReports;
+    </script>
+</body>
+</html>

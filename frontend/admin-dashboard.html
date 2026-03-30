@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Screen Time</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-nav {
+            background: rgba(239, 68, 68, 0.2);
+            border-bottom-color: var(--accent-red);
+        }
+        .admin-tab { display: none; }
+        .admin-tab.active { display: block; }
+        .tab-buttons { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <h2><a href="admin-dashboard.html" style="color:var(--accent-red)">Admin Portal</a></h2>
+        <div class="nav-links">
+            <span class="text-muted" style="padding: 0.5rem 1rem;">Logged in as Admin</span>
+            <a href="#" onclick="logout();" style="color: var(--text-main);">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Admin Control Panel</h1>
+
+        <div class="tab-buttons">
+            <button class="btn btn-outline" style="width: auto;" onclick="switchTab('users')">Manage Users</button>
+            <button class="btn btn-outline" style="width: auto;" onclick="switchTab('usage')">Monitor Usage</button>
+            <button class="btn btn-outline" style="width: auto;" onclick="switchTab('rewards')">View Rewards</button>
+        </div>
+
+        <div id="users-tab" class="admin-tab active glass-panel">
+            <h3>Registered Users</h3>
+            <div id="alert-msg" class="alert"></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th style="width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="usage-tab" class="admin-tab glass-panel">
+            <h3>System-Wide Usage Activities</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>User Name</th>
+                        <th>Website</th>
+                        <th>Duration (Mins)</th>
+                    </tr>
+                </thead>
+                <tbody id="usage-tbody"></tbody>
+            </table>
+        </div>
+
+        <div id="rewards-tab" class="admin-tab glass-panel">
+            <h3>System-Wide Rewards Issued</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>User Name</th>
+                        <th>Badge Name</th>
+                    </tr>
+                </thead>
+                <tbody id="rewards-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        checkAdminAuth();
+
+        function switchTab(tab) {
+            document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            
+            if (tab === 'users') loadUsers();
+            if (tab === 'usage') loadUsage();
+            if (tab === 'rewards') loadRewards();
+        }
+
+        async function loadUsers() {
+            try {
+                const users = await apiRequest('/admin/users');
+                const tbody = document.getElementById('users-tbody');
+                tbody.innerHTML = '';
+                
+                users.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${u.name}</td>
+                            <td>${u.email}</td>
+                            <td><span class="text-muted">${u.role}</span></td>
+                            <td>
+                                ${u.role !== 'admin' ? 
+                                `<button class="btn btn-danger" style="padding: 0.25rem 0.5rem;" onclick="deleteUser(${u.id})">Delete</button>` 
+                                : '-'}
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        async function deleteUser(id) {
+            if(!confirm('Are you sure you want to permanently delete this user?')) return;
+            try {
+                await apiRequest(`/admin/delete-user/${id}`, 'DELETE');
+                loadUsers();
+            } catch (e) {
+                const el = document.getElementById('alert-msg');
+                el.innerText = e.message;
+                el.className = 'alert alert-error';
+                setTimeout(() => el.style.display = 'none', 3000);
+            }
+        }
+
+        async function loadUsage() {
+            try {
+                const usage = await apiRequest('/admin/usage');
+                const tbody = document.getElementById('usage-tbody');
+                tbody.innerHTML = '';
+                usage.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${new Date(u.date).toLocaleDateString()}</td>
+                            <td>${u.user_name}</td>
+                            <td>${u.website_name}</td>
+                            <td>${u.duration}</td>
+                        </tr>
+                    `;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadRewards() {
+            try {
+                const rewards = await apiRequest('/admin/rewards');
+                const tbody = document.getElementById('rewards-tbody');
+                tbody.innerHTML = '';
+                rewards.forEach(r => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.id}</td>
+                            <td>${new Date(r.date).toLocaleDateString()}</td>
+                            <td>${r.user_name}</td>
+                            <td><strong style="color:var(--accent-yellow)">${r.badge_name}</strong></td>
+                        </tr>
+                    `;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        window.onload = loadUsers;
+    </script>
+</body>
+</html>

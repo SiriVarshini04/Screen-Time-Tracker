@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rewards - Screen Time</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav>
+        <h2><a href="dashboard.html" class="brand-logo">ScreenTime</a></h2>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="manage-websites.html">Websites</a>
+            <a href="limits.html">Limits</a>
+            <a href="reports.html">Reports</a>
+            <a href="rewards.html" class="active">Rewards</a>
+            <a href="#" onclick="logout()">Logout</a>
+            <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0; border:none; margin-top:0; font-size:1.2rem; cursor:pointer;" title="Toggle Light/Dark Mode">🌓</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Your Badges & Rewards</h1>
+
+        <div class="glass-panel" style="margin-top: 2rem;">
+            <p class="text-muted" style="margin-bottom: 2rem;">Keep your daily usage under limits to earn more badges!</p>
+
+            <div class="badges-grid" id="badges-container">
+                <!-- Data populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        checkAuth();
+
+        async function loadBadges() {
+            try {
+                const badges = await apiRequest('/get-badges');
+                const container = document.getElementById('badges-container');
+                
+                if (badges.length === 0) {
+                    container.innerHTML = '<p class="text-muted" style="grid-column: span 3;">Start tracking to earn your first badge!</p>';
+                    return;
+                }
+
+                badges.forEach(b => {
+                    // Randomize icon based on badge char code sum to make it simple
+                    const sum = b.badge_name.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
+                    const icons = ['🏆', '🌟', '🎯', '🏅', '💡', '🚀', '🧠', '⚡'];
+                    const icon = icons[sum % icons.length];
+
+                    const dateStr = new Date(b.date).toLocaleDateString();
+
+                    container.innerHTML += `
+                        <div class="badge-item">
+                            <div class="badge-icon">${icon}</div>
+                            <h4 style="margin-bottom: 0.5rem;">${b.badge_name}</h4>
+                            <small class="text-muted">Earned: ${dateStr}</small>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        window.onload = loadBadges;
+    </script>
+</body>
+</html>

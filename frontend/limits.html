@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Limits - Screen Time</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav>
+        <h2><a href="dashboard.html" class="brand-logo">ScreenTime</a></h2>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="manage-websites.html">Websites</a>
+            <a href="limits.html" class="active">Limits</a>
+            <a href="reports.html">Reports</a>
+            <a href="rewards.html">Rewards</a>
+            <a href="#" onclick="logout()">Logout</a>
+            <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0; border:none; margin-top:0; font-size:1.2rem; cursor:pointer;" title="Toggle Light/Dark Mode">🌓</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Set Screen Time Limits</h1>
+        
+        <div class="glass-panel" style="max-width: 600px; margin: 0 auto; margin-top: 2rem;">
+            <p class="text-muted" style="margin-bottom: 2rem;">Configure your daily and weekly limits. If you exceed these, access to tracked websites will be restricted according to the app rules.</p>
+            
+            <div id="alert-msg" class="alert"></div>
+
+            <form id="limits-form">
+                <div class="form-group">
+                    <label>Daily Limit (minutes)</label>
+                    <input type="number" id="daily" class="form-control" required min="1">
+                </div>
+                <div class="form-group">
+                    <label>Weekly Limit (minutes)</label>
+                    <input type="number" id="weekly" class="form-control" required min="1">
+                </div>
+                <button type="submit" class="btn btn-success">Update Limits</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        checkAuth();
+
+        async function loadLimits() {
+            try {
+                const limits = await apiRequest('/get-limits');
+                document.getElementById('daily').value = limits.daily_limit;
+                document.getElementById('weekly').value = limits.weekly_limit;
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        document.getElementById('limits-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const daily_limit = document.getElementById('daily').value;
+            const weekly_limit = document.getElementById('weekly').value;
+
+            try {
+                await apiRequest('/set-limits', 'POST', { daily_limit, weekly_limit });
+                const el = document.getElementById('alert-msg');
+                el.innerText = 'Limits updated successfully!';
+                el.className = 'alert alert-success';
+                setTimeout(() => el.style.display = 'none', 3000);
+            } catch (err) {
+                const el = document.getElementById('alert-msg');
+                el.innerText = err.message;
+                el.className = 'alert alert-error';
+            }
+        });
+
+        window.onload = loadLimits;
+    </script>
+</body>
+</html>

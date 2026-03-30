@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MERIDIAN - Screen Time Reimagined</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Load Phosphor icons for sleek thin icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <div class="glow-beam"></div>
+
+    <nav>
+        <a href="index.html" class="brand-logo">MERIDIAN</a>
+        <div class="nav-links" style="align-items: center;">
+            <a href="#" id="nav-login">Log In</a>
+            <a href="#" id="nav-signup">Sign Up</a>
+            <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0; border:none; margin-top:0; font-size:1.2rem; cursor:pointer;" title="Toggle Light/Dark Mode">🌓</button>
+        </div>
+    </nav>
+
+    <div class="container text-center" style="margin-top: 4rem;">
+        
+        <!-- Hero Section -->
+        <div class="glass-panel" id="hero-panel" style="max-width: 900px; margin: 0 auto; padding: 5rem 2rem;">
+            <h1 class="hero-title">TAKE BACK YOUR TIME.</h1>
+            <p class="hero-subtitle">Track smarter. Limit better. Live more.</p>
+            
+            <div class="tracking-badge">
+                <div class="pulse"></div>
+                NOW TRACKING YOUR HABITS
+            </div>
+            
+            <div class="flex-center mt-4">
+                <button class="btn btn-primary" id="btn-get-started">Get Started &rarr;</button>
+            </div>
+        </div>
+
+        <!-- Auth Form Overlay (Hidden by Default) -->
+        <div class="glass-panel" id="auth-panel" style="max-width: 450px; margin: 0 auto; display: none;">
+            <h2 id="form-title" style="margin-bottom: 2rem;">Log In</h2>
+            <div id="error-msg" style="color: #ef4444; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+
+            <form id="auth-form">
+                <div class="form-group" id="name-group" style="display: none;">
+                    <label>Name</label>
+                    <input type="text" id="name" class="form-control" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="user@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn" id="submit-btn" style="margin-top: 1rem;">Log In</button>
+            </form>
+            
+            <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);">
+                <span id="toggle-text">Don't have an account?</span>
+                <a href="#" id="toggle-link" class="auth-toggle-link" style="margin-left: 5px;">Sign Up</a>
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.8rem;">
+                <a href="admin-login.html" style="color: #52525b;">Admin Access</a>
+            </p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="feature-grid" id="features">
+            <div class="glass-card">
+                <div class="card-icon"><i class="ph ph-clock"></i></div>
+                <h3>Track Usage</h3>
+                <p>Monitor screen time across all domains securely in the background.</p>
+            </div>
+            <div class="glass-card">
+                <div class="card-icon"><i class="ph ph-shield-check"></i></div>
+                <h3>Set Limits</h3>
+                <p>Define boundaries to stay focused and prevent endless scrolling.</p>
+            </div>
+            <div class="glass-card">
+                <div class="card-icon"><i class="ph ph-prohibit"></i></div>
+                <h3>Block Distractions</h3>
+                <p>Hard blocks automatically intercept access to dangerous domains.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        let isLogin = true;
+
+        const heroPanel = document.getElementById('hero-panel');
+        const authPanel = document.getElementById('auth-panel');
+        const featuresGrid = document.getElementById('features');
+
+        // Show Auth Form Function
+        function showAuth(mode) {
+            isLogin = mode === 'login';
+            heroPanel.style.display = 'none';
+            featuresGrid.style.display = 'none';
+            authPanel.style.display = 'block';
+            
+            document.getElementById('form-title').innerText = isLogin ? 'Log In' : 'Sign Up';
+            document.getElementById('name-group').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('submit-btn').innerText = isLogin ? 'Log In' : 'Sign Up';
+            document.getElementById('toggle-text').innerText = isLogin ? "Don't have an account?" : "Already have an account?";
+            document.getElementById('toggle-link').innerText = isLogin ? "Sign Up" : "Log In";
+        }
+
+        // Event Listeners
+        document.getElementById('btn-get-started').addEventListener('click', () => showAuth('register'));
+        document.getElementById('nav-login').addEventListener('click', (e) => { e.preventDefault(); showAuth('login'); });
+        document.getElementById('nav-signup').addEventListener('click', (e) => { e.preventDefault(); showAuth('register'); });
+
+        document.getElementById('toggle-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuth(isLogin ? 'register' : 'login');
+        });
+
+        // Form Submission
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            const errorMsg = document.getElementById('error-msg');
+
+            try {
+                if (isLogin) {
+                    const res = await apiRequest('/login', 'POST', { email, password });
+                    localStorage.setItem('token', res.token);
+                    localStorage.setItem('user', JSON.stringify(res.user));
+                    window.location.href = 'dashboard.html';
+                } else {
+                    const res = await apiRequest('/register', 'POST', { name, email, password });
+                    alert('Registration successful! Please login.');
+                    showAuth('login');
+                }
+            } catch (err) {
+                errorMsg.innerText = err.message;
+            }
+        });
+    </script>
+</body>
+</html>

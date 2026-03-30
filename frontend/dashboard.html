@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Screen Time</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav>
+        <h2><a href="dashboard.html" class="brand-logo">ScreenTime</a></h2>
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="manage-websites.html">Websites</a>
+            <a href="limits.html">Limits</a>
+            <a href="reports.html">Reports</a>
+            <a href="rewards.html">Rewards</a>
+            <a href="#" onclick="logout()">Logout</a>
+            <button onclick="toggleTheme()" class="btn btn-outline" style="padding:0; border:none; margin-top:0; font-size:1.2rem; cursor:pointer;" title="Toggle Light/Dark Mode">🌓</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Welcome, <span id="user-name"></span></h1>
+        
+        <div id="error-msg" class="alert"></div>
+
+        <div class="dashboard-grid">
+            <div class="glass-card">
+                <h3>Daily Usage</h3>
+                <h2 id="daily-total" style="font-size: 2.5rem; color: var(--accent-blue)">0 mins</h2>
+                <div class="progress-container">
+                    <div id="daily-progress" class="progress-bar"></div>
+                </div>
+                <p id="daily-desc" class="text-muted" style="margin-top: 5px;">0 / 0 mins used</p>
+                <div id="alert-warning" class="alert alert-warning" style="margin-top: 10px; display: none;">
+                    <strong>Warning!</strong> You are nearing your daily limit.
+                </div>
+                <div id="activity-suggestion" class="alert alert-success" style="margin-top: 10px; display: none;">
+                    Why not take a break? Try reading a book, going for a short walk, or doing some stretching!
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3>Weekly Usage</h3>
+                <h2 id="weekly-total" style="font-size: 2.5rem; color: var(--accent-green)">0 mins</h2>
+                <div class="progress-container">
+                    <div id="weekly-progress" class="progress-bar" style="background: var(--accent-green)"></div>
+                </div>
+                <p id="weekly-desc" class="text-muted" style="margin-top: 5px;">0 / 0 mins used</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        checkAuth();
+        const user = JSON.parse(localStorage.getItem('user'));
+        document.getElementById('user-name').innerText = user.name;
+
+        let dailyLimit = 120;
+        let weeklyLimit = 600;
+        let totalDaily = 0;
+
+        async function loadDashboard() {
+            try {
+                const limits = await apiRequest('/get-limits');
+                dailyLimit = limits.daily_limit;
+                weeklyLimit = limits.weekly_limit;
+
+                const reports = await apiRequest('/get-reports');
+                totalDaily = reports.totalDaily || 0;
+                const totalWeekly = reports.totalWeekly || 0;
+
+                // Update UI daily
+                document.getElementById('daily-total').innerText = totalDaily + ' mins';
+                document.getElementById('daily-desc').innerText = `${totalDaily} / ${dailyLimit} mins used`;
+                
+                let dailyPct = (totalDaily / dailyLimit) * 100;
+                if(dailyPct > 100) dailyPct = 100;
+                
+                const dailyBar = document.getElementById('daily-progress');
+                dailyBar.style.width = `${dailyPct}%`;
+                
+                if (dailyPct >= 100) {
+                    dailyBar.className = 'progress-bar danger';
+                    blockIfExceeded();
+                } else if (dailyPct >= 80) {
+                    dailyBar.className = 'progress-bar warning';
+                    document.getElementById('alert-warning').style.display = 'block';
+                    document.getElementById('activity-suggestion').style.display = 'block';
+                }
+
+                // Update UI weekly
+                document.getElementById('weekly-total').innerText = totalWeekly + ' mins';
+                document.getElementById('weekly-desc').innerText = `${totalWeekly} / ${weeklyLimit} mins used`;
+                
+                let weeklyPct = (totalWeekly / weeklyLimit) * 100;
+        if(weeklyPct > 100) weeklyPct = 100;
+        document.getElementById('weekly-progress').style.width = `${weeklyPct}%`;
+                
+    } catch (e) {
+        showError(e.message);
+    }
+        }
+
+        function blockIfExceeded() {
+            // Wait a moment then block
+            setTimeout(() => {
+                document.body.innerHTML = `
+                    <div style="display:flex; justify-content:center; align-items:center; height:100vh; flex-direction:column; text-align:center;">
+                        <h1 style="color:var(--accent-red); font-size:4rem;">BLOCKED</h1>
+                        <p style="font-size:1.5rem; margin: 20px 0;">You have exceeded your daily limit of ${dailyLimit} mins.</p>
+                        <p class="alert alert-success" style="display:block; padding:20px; font-size:1.2rem;">Time to step away! Read a book, go for a walk, or meditate.</p>
+                        <button class="btn" onclick="location.reload()" style="max-width:200px; margin-top:20px;">Check Again</button>
+                    </div>
+                `;
+            }, 1000);
+        }
+
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>

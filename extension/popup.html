@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div id="login-screen">
+        <h2>Screen Time</h2>
+        <p class="subtitle">Log in to activate tracker</p>
+        <div id="error-msg" class="error"></div>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit" class="btn">Login</button>
+        </form>
+    </div>
+
+    <div id="status-screen" style="display: none;">
+        <h2>Tracker Active</h2>
+        <div class="pulse-container">
+            <div class="pulse"></div>
+        </div>
+        <p id="user-greeting">Logged in user.</p>
+        <button id="logout-btn" class="btn btn-outline">Logout</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
